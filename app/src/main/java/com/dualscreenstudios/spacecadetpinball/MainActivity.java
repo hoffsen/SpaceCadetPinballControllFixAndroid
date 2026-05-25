@@ -1,13 +1,16 @@
 package com.dualscreenstudios.spacecadetpinball;
 
 import android.content.res.AssetManager;
+import android.graphics.Insets;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.view.WindowInsets;
+import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 
 import org.libsdl.app.SDLActivity;
@@ -28,47 +31,67 @@ public class MainActivity extends SDLActivity {
         copyAssets(filesDir);
         initNative(filesDir.getAbsolutePath() + "/");
 
-        View v = getLayoutInflater().inflate(R.layout.activity_main, mLayout, false);
+        View overlay = getLayoutInflater().inflate(R.layout.activity_main, mLayout, false);
 
-        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-        mLayout.addView(v, layoutParams);
+        mLayout.addView(overlay, layoutParams);
 
-        v.bringToFront();
+        overlay.bringToFront();
+        applySystemBarInsets(overlay);
 
-        Button left = findViewById(R.id.left);
-        Button right = findViewById(R.id.right);
-        Button plunger = findViewById(R.id.plunger);
+        ImageButton left = findViewById(R.id.left);
+        ImageButton right = findViewById(R.id.right);
+        ImageButton plunger = findViewById(R.id.plunger);
 
-        left.setOnTouchListener((v1, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_Z);
+        bindKey(left, KeyEvent.KEYCODE_Z);
+        bindKey(right, KeyEvent.KEYCODE_SLASH);
+        bindKey(plunger, KeyEvent.KEYCODE_SPACE);
+    }
+
+    private void bindKey(View button, final int keyCode) {
+        button.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    SDLActivity.onNativeKeyDown(keyCode);
+                    v.setPressed(true);
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    SDLActivity.onNativeKeyUp(keyCode);
+                    v.setPressed(false);
+                    v.performClick();
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    SDLActivity.onNativeKeyUp(keyCode);
+                    v.setPressed(false);
+                    return true;
+                default:
+                    return false;
             }
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_Z);
-            }
-            return false;
         });
+    }
 
-        right.setOnTouchListener((v1, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_SLASH);
+    private void applySystemBarInsets(View overlay) {
+        overlay.setOnApplyWindowInsetsListener((v, insets) -> {
+            int left, top, right, bottom;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Insets bars = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                left = bars.left;
+                top = bars.top;
+                right = bars.right;
+                bottom = bars.bottom;
+            } else {
+                left = insets.getSystemWindowInsetLeft();
+                top = insets.getSystemWindowInsetTop();
+                right = insets.getSystemWindowInsetRight();
+                bottom = insets.getSystemWindowInsetBottom();
             }
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_SLASH);
-            }
-            return false;
+            v.setPadding(left, top, right, bottom);
+            return insets;
         });
-
-        plunger.setOnTouchListener((v1, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_SPACE);
-            }
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_SPACE);
-            }
-            return false;
-        });
+        overlay.requestApplyInsets();
     }
 
     private void copyAssets(File filesDir) {
