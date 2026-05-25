@@ -21,6 +21,9 @@ jobs:
           java-version: '17'
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+      - name: Install NDK r23 and CMake 3.22.1
+        run: |
+          yes | sdkmanager --install "ndk;23.2.8568313" "cmake;3.22.1"
       - name: Build debug APK
         run: |
           chmod +x gradlew
@@ -31,3 +34,12 @@ jobs:
           name: SpaceCadetPinball-debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            app/build/outputs/logs/
+            app/.cxx/
+          if-no-files-found: ignore

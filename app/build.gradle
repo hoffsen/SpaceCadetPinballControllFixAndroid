@@ -5,6 +5,7 @@ plugins {
 android {
     namespace 'com.dualscreenstudios.spacecadetpinball'
     compileSdk 36
+    ndkVersion '23.2.8568313'
 
     defaultConfig {
         applicationId "com.dualscreenstudios.spacecadetpinball"
