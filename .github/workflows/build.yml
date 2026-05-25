@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - android
+      - 'claude/**'
+  pull_request:
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,7 +19,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Build the app
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Build debug APK
         run: |
           chmod +x gradlew
-          ./gradlew build
+          ./gradlew assembleDebug --stacktrace
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpaceCadetPinball-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
