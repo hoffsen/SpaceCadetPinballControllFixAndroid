@@ -133,6 +133,18 @@ include_directories(
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/SDL)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/SDL_mixer)
 
+# The pinned SDL2 / SDL_mixer submodules predate fixes for warnings that
+# newer NDK clangs (r26+) flag. Soften the ones SDL builds with -Werror so
+# the build works without touching the submodules.
+foreach(_tgt SDL2 SDL2-static SDL2_mixer hidapi)
+    if(TARGET ${_tgt})
+        target_compile_options(${_tgt} PRIVATE
+                -Wno-error=declaration-after-statement
+                -Wno-error=incompatible-function-pointer-types
+                -Wno-error=implicit-function-declaration)
+    endif()
+endforeach()
+
 find_library(log-lib log)
 
 target_link_libraries(SpaceCadetPinball SDL2 SDL2_mixer ${log-lib})
