@@ -3,4 +3,13 @@
     <string name="control_left">Left flipper</string>
     <string name="control_right">Right flipper</string>
     <string name="control_plunger">Plunger</string>
+    <string name="control_menu">Menu</string>
+    <string name="menu_title">Pinball</string>
+    <string name="menu_new_game">New game</string>
+    <string name="menu_pause">Pause / Resume</string>
+    <string name="menu_high_scores">High scores</string>
+    <string name="menu_toggle_sound">Toggle sound</string>
+    <string name="menu_toggle_music">Toggle music</string>
+    <string name="menu_close">Close</string>
+    <string name="high_scores_title">High scores</string>
 </resources>

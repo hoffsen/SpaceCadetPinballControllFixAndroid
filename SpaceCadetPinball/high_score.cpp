@@ -135,7 +135,19 @@ void high_score::show_and_set_high_score_dialog(high_score_struct* table, int sc
 	dlg_hst = table;
 	dlg_enter_name = 1;
 	strncpy(default_name, defaultName, sizeof default_name - 1);
+	default_name[sizeof default_name - 1] = 0;
 	ShowDialog = true;
+
+	// The Android port doesn't render the ImGui name-entry dialog, so the
+	// score would otherwise never be committed and the dialog state would
+	// stay half-open across the game-end transition (a common crash path
+	// on subsequent input). Commit immediately with the default name and
+	// persist so the high score survives an app restart.
+	place_new_score_into(table, score, default_name, pos);
+	write(table);
+	options::SaveSettingsToDisk();
+	ShowDialog = false;
+	dlg_enter_name = 0;
 }
 
 void high_score::RenderHighScoreDialog()

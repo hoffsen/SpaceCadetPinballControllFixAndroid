@@ -7,6 +7,9 @@
 #include "Sound.h"
 #include "winmain.h"
 
+#include <fstream>
+#include <sstream>
+
 constexpr int options::MaxUps, options::MaxFps, options::MinUps, options::MinFps, options::DefUps, options::DefFps;
 constexpr int options::MaxSoundChannels, options::MinSoundChannels, options::DefSoundChannels;
 
@@ -26,8 +29,42 @@ const ControlRef options::Controls[6]
 };
 
 
+static std::string settings_file_path()
+{
+	if (!winmain::BasePath || !*winmain::BasePath)
+		return "pinball.cfg";
+	return std::string(winmain::BasePath) + "pinball.cfg";
+}
+
+void options::LoadSettingsFromDisk()
+{
+	std::ifstream f(settings_file_path());
+	if (!f.is_open())
+		return;
+	std::string line;
+	while (std::getline(f, line))
+	{
+		if (line.empty() || line[0] == '#')
+			continue;
+		auto eq = line.find('=');
+		if (eq == std::string::npos)
+			continue;
+		settings[line.substr(0, eq)] = line.substr(eq + 1);
+	}
+}
+
+void options::SaveSettingsToDisk()
+{
+	std::ofstream f(settings_file_path(), std::ios::trunc);
+	if (!f.is_open())
+		return;
+	for (const auto& kv : settings)
+		f << kv.first << '=' << kv.second << '\n';
+}
+
 void options::init()
 {
+	LoadSettingsFromDisk();
 //	auto imContext = ImGui::GetCurrentContext();
 //	ImGuiSettingsHandler ini_handler;
 //	ini_handler.TypeName = "Pinball";
@@ -128,6 +165,8 @@ void options::uninit()
 	set_int("ShowMenu", Options.ShowMenu);
 	set_int("Uncapped Updates Per Second", Options.UncappedUpdatesPerSecond);
 	set_int("Sound Channels", Options.SoundChannels);
+
+	SaveSettingsToDisk();
 }
 
 

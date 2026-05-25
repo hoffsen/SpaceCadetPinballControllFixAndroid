@@ -1,7 +1,9 @@
 package com.dualscreenstudios.spacecadetpinball;
 
+import android.app.AlertDialog;
 import android.content.res.AssetManager;
 import android.graphics.Insets;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,6 +14,7 @@ import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import org.libsdl.app.SDLActivity;
 
@@ -44,10 +47,24 @@ public class MainActivity extends SDLActivity {
         ImageButton left = findViewById(R.id.left);
         ImageButton right = findViewById(R.id.right);
         ImageButton plunger = findViewById(R.id.plunger);
+        ImageButton menu = findViewById(R.id.menu);
 
         bindKey(left, KeyEvent.KEYCODE_Z);
         bindKey(right, KeyEvent.KEYCODE_SLASH);
         bindKey(plunger, KeyEvent.KEYCODE_SPACE);
+        menu.setOnClickListener(v -> showMenu());
+    }
+
+    @Override
+    protected void onPause() {
+        // Android can kill the process at any point after onPause without
+        // calling onDestroy, so flush settings (incl. high scores) here.
+        try {
+            nativeSaveSettings();
+        } catch (UnsatisfiedLinkError e) {
+            Log.w(TAG, "Native lib not yet loaded, skipping settings save");
+        }
+        super.onPause();
     }
 
     private void bindKey(View button, final int keyCode) {
@@ -70,6 +87,61 @@ public class MainActivity extends SDLActivity {
                     return false;
             }
         });
+    }
+
+    private void showMenu() {
+        String[] items = {
+                getString(R.string.menu_new_game),
+                getString(R.string.menu_pause),
+                getString(R.string.menu_high_scores),
+                getString(R.string.menu_toggle_sound),
+                getString(R.string.menu_toggle_music),
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.menu_title)
+                .setItems(items, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            sendKey(KeyEvent.KEYCODE_F2);
+                            break;
+                        case 1:
+                            sendKey(KeyEvent.KEYCODE_F3);
+                            break;
+                        case 2:
+                            showHighScores();
+                            break;
+                        case 3:
+                            sendKey(KeyEvent.KEYCODE_F5);
+                            nativeSaveSettings();
+                            break;
+                        case 4:
+                            sendKey(KeyEvent.KEYCODE_F6);
+                            nativeSaveSettings();
+                            break;
+                    }
+                })
+                .setNegativeButton(R.string.menu_close, null)
+                .show();
+    }
+
+    private void showHighScores() {
+        String scores = nativeGetHighScores();
+        TextView tv = new TextView(this);
+        tv.setText(scores);
+        tv.setTypeface(Typeface.MONOSPACE);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        tv.setPadding(pad, pad, pad, pad);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.high_scores_title)
+                .setView(tv)
+                .setPositiveButton(R.string.menu_close, null)
+                .show();
+    }
+
+    private void sendKey(int keyCode) {
+        // Synthesize a quick down/up so the game's event_handler sees a tap.
+        SDLActivity.onNativeKeyDown(keyCode);
+        SDLActivity.onNativeKeyUp(keyCode);
     }
 
     private void applySystemBarInsets(View overlay) {
@@ -132,4 +204,6 @@ public class MainActivity extends SDLActivity {
     }
 
     private native void initNative(String dataPath);
+    private native void nativeSaveSettings();
+    private native String nativeGetHighScores();
 }
